@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales & Component Intelligence Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js DataLabels Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <!-- SheetJS for Excel Reading -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans pb-10">
+
+    <!-- Navigation Header -->
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+            <div class="flex items-center space-x-3">
+                <span class="text-blue-400 font-bold text-2xl">📊</span>
+                <div>
+                    <h1 class="text-lg font-bold tracking-wide text-white">RIL Sales Dashboard</h1>
+                    <p class="text-[11px] text-slate-400">OSP (Job Work) & Non-OSP Analytics</p>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-2">
+                <!-- FY Selector -->
+                <div class="flex items-center space-x-1 bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-700 text-xs font-semibold">
+                    <span class="text-slate-400">FY:</span>
+                    <select id="fySelect" onchange="onFilterChange('fySelect')" class="bg-slate-800 text-white border-0 text-xs focus:ring-0 cursor-pointer rounded px-1">
+                        <option value="ALL">All FY</option>
+                    </select>
+                </div>
+
+                <!-- Month Filter Mode Selector -->
+                <div class="flex items-center space-x-1 bg-slate-900 px-2 py-1.5 rounded-lg border border-slate-700 text-xs font-semibold">
+                    <span class="text-slate-400">Mode:</span>
+                    <select id="monthFilterMode" onchange="onFilterChange('monthFilterMode')" class="bg-slate-800 text-amber-400 border-0 text-xs focus:ring-0 cursor-pointer rounded px-1 font-bold">
+                        <option value="YTD">YTD (Up To Month)</option>
+                        <option value="SINGLE">Exact Month Only</option>
+                    </select>
+                </div>
+
+                <!-- Month Selector -->
+                <div class="flex items-center space-x-1 bg-slate-900 px-2.5 py-1.5 rounded-lg border border-blue-500/50 text-xs font-semibold">
+                    <span class="text-blue-400 font-bold">Month:</span>
+                    <select id="monthSelect" onchange="onFilterChange('monthSelect')" class="bg-slate-800 text-white border-0 text-xs focus:ring-0 cursor-pointer rounded px-1 font-bold text-blue-300">
+                        <option value="ALL">All Months</option>
+                    </select>
+                </div>
+
+                <!-- Specific Date Selector -->
+                <div class="flex items-center space-x-1 bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-700 text-xs font-semibold">
+                    <span class="text-slate-400">Date:</span>
+                    <select id="dateSelect" onchange="onFilterChange('dateSelect')" class="bg-slate-800 text-white border-0 text-xs focus:ring-0 cursor-pointer rounded px-1">
+                        <option value="ALL">All Dates</option>
+                    </select>
+                </div>
+
+                <!-- Class Selector -->
+                <div class="flex items-center space-x-1 bg-slate-900 px-2.5 py-1.5 rounded-lg border border-cyan-500/50 text-xs font-semibold">
+                    <span class="text-cyan-400 font-bold">Class:</span>
+                    <select id="classSelect" onchange="onFilterChange('classSelect')" class="bg-slate-800 text-cyan-300 border-0 text-xs focus:ring-0 cursor-pointer rounded px-1 font-bold">
+                        <option value="ALL">All Class</option>
+                    </select>
+                </div>
+
+                <!-- Customer Selector -->
+                <div class="flex items-center space-x-1 bg-slate-900 px-2.5 py-1.5 rounded-lg border border-rose-500/50 text-xs font-semibold">
+                    <span class="text-rose-400 font-bold">Customer:</span>
+                    <select id="customerSelect" onchange="onFilterChange('customerSelect')" class="bg-slate-800 text-rose-300 border-0 text-xs focus:ring-0 cursor-pointer rounded px-1 font-bold max-w-[150px]">
+                        <option value="ALL">All Customers</option>
+                    </select>
+                </div>
+
+                <!-- Component Selector -->
+                <div class="flex items-center space-x-1 bg-slate-900 px-2.5 py-1.5 rounded-lg border border-amber-500/50 text-xs font-semibold">
+                    <span class="text-amber-400 font-bold">Component:</span>
+                    <select id="componentSelect" onchange="onFilterChange('componentSelect')" class="bg-slate-800 text-amber-300 border-0 text-xs focus:ring-0 cursor-pointer rounded px-1 font-bold max-w-[180px]">
+                        <option value="ALL">All Components</option>
+                    </select>
+                </div>
+
+                <!-- Order Type Selector -->
+                <div class="flex items-center space-x-1 bg-slate-900 px-2.5 py-1.5 rounded-lg border border-purple-500/50 text-xs font-semibold">
+                    <span class="text-purple-400 font-bold">Order Type:</span>
+                    <select id="orderTypeSelect" onchange="onFilterChange('orderTypeSelect')" class="bg-slate-800 text-purple-300 border-0 text-xs focus:ring-0 cursor-pointer rounded px-1 font-bold">
+                        <option value="ALL">All Order Types</option>
+                        <option value="ZSUD_ZSUC">ZSUD / ZSUC</option>
+                        <option value="ZSAD">ZSAD</option>
+                        <option value="ZESO">ZESO</option>
+                        <option value="ZCRO">ZCRO</option>
+                        <option value="ZSCS">ZSCS</option>
+                        <option value="ZSER">ZSER</option>
+                    </select>
+                </div>
+
+                <button id="btnYtdView" onclick="resetToYtdView()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow transition">
+                    ⚡ Reset
+                </button>
+
+                <!-- Currency Switcher -->
+                <div class="bg-slate-900 p-1 rounded-lg border border-slate-700 flex text-xs font-semibold">
+                    <button id="btnUnitActual" onclick="switchUnit('actual')" class="px-2 py-1 rounded-md text-slate-400 hover:text-white transition">Actual (₹)</button>
+                    <button id="btnUnitLacs" onclick="switchUnit('lacs')" class="px-2 py-1 rounded-md bg-amber-600 text-white transition">Lakhs (₹)</button>
+                    <button id="btnUnitCr" onclick="switchUnit('cr')" class="px-2 py-1 rounded-md text-slate-400 hover:text-white transition">Crores (₹)</button>
+                </div>
+
+                <!-- OSP Switcher -->
+                <div class="bg-slate-900 p-1 rounded-lg border border-slate-700 flex text-xs font-semibold">
+                    <button id="btnNonOsp" onclick="switchOspMode('non-osp')" class="px-2 py-1 rounded-md bg-emerald-600 text-white transition">Non-OSP</button>
+                    <button id="btnOspOnly" onclick="switchOspMode('osp')" class="px-2 py-1 rounded-md text-slate-400 hover:text-white transition">OSP</button>
+                </div>
+
+                <!-- File Upload Button -->
+                <label class="cursor-pointer bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg font-medium text-xs flex items-center gap-1 shadow-lg transition">
+                    <span>📁 Upload Excel</span>
+                    <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)">
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+        <!-- Upload Prompt -->
+        <div id="uploadPrompt" class="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center my-6">
+            <p class="text-slate-300 text-lg font-medium">Please click <strong class="text-blue-400">"Upload Excel"</strong> above to load your sale data file.</p>
+        </div>
+
+        <!-- ROW 1: Executive Sales Summary -->
+        <div id="kpiRow1" class="hidden bg-slate-800 border border-slate-700 rounded-xl p-5 shadow-lg">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-2">
+                <div>
+                    <h2 class="text-md font-bold text-white tracking-wide">Overall Executive Sales Summary</h2>
+                    <p class="text-xs text-slate-400" id="activeFilterBadge">Full Period Consolidated Breakdown</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs text-slate-400">Grand Total Net Sales (Excl. ZFOC & ZEFC)</span>
+                    <h3 id="row1TotalSale" class="text-2xl font-extrabold text-blue-400">₹0</h3>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                <div class="bg-slate-900/80 p-3 rounded-lg border border-blue-500/40 relative">
+                    <div class="flex justify-between items-start">
+                        <p class="text-[11px] text-blue-400 font-semibold uppercase">Net Component Sale</p>
+                        <span id="pctComp" class="text-[10px] bg-blue-950 text-blue-300 px-1.5 py-0.5 rounded font-bold border border-blue-500/30">0%</span>
+                    </div>
+                    <h4 id="r1CompVal" class="text-base font-bold text-white mt-1">₹0</h4>
+                    <p id="r1CompQty" class="text-[10px] text-slate-400">Qty: 0 Pcs</p>
+                    <p class="text-[9px] text-emerald-400 mt-0.5">(HPDC + LPDC Sale)</p>
+                </div>
+
+                <div class="bg-slate-900/80 p-3 rounded-lg border border-rose-500/40 relative">
+                    <div class="flex justify-between items-start">
+                        <p class="text-[11px] text-rose-400 font-semibold uppercase">Scrap Sale</p>
+                        <span id="pctScrap" class="text-[10px] bg-rose-950 text-rose-300 px-1.5 py-0.5 rounded font-bold border border-rose-500/30">0%</span>
+                    </div>
+                    <h4 id="r1ScrapVal" class="text-base font-bold text-white mt-1">₹0</h4>
+                    <p id="r1ScrapQty" class="text-[10px] text-slate-400">Qty: 0 Kg</p>
+                    <p class="text-[9px] text-emerald-400 mt-0.5">(ZSCS)</p>
+                </div>
+
+                <div class="bg-slate-900/80 p-3 rounded-lg border border-amber-500/40 relative">
+                    <div class="flex justify-between items-start">
+                        <p class="text-[11px] text-amber-400 font-semibold uppercase">Tool Room Sale</p>
+                        <span id="pctTool" class="text-[10px] bg-amber-950 text-amber-300 px-1.5 py-0.5 rounded font-bold border border-amber-500/30">0%</span>
+                    </div>
+                    <h4 id="r1ToolVal" class="text-base font-bold text-white mt-1">₹0</h4>
+                    <p id="r1ToolQty" class="text-[10px] text-slate-400">Qty: 0 Set (Net)</p>
+                    <p class="text-[9px] text-emerald-400 mt-0.5">(Mat starts T)</p>
+                </div>
+
+                <div class="bg-slate-900/80 p-3 rounded-lg border border-purple-500/40 relative">
+                    <div class="flex justify-between items-start">
+                        <p class="text-[11px] text-purple-400 font-semibold uppercase">MBD Sale</p>
+                        <span id="pctMbd" class="text-[10px] bg-purple-950 text-purple-300 px-1.5 py-0.5 rounded font-bold border border-purple-500/30">0%</span>
+                    </div>
+                    <h4 id="r1MbdVal" class="text-base font-bold text-white mt-1">₹0</h4>
+                    <p id="r1MbdQty" class="text-[10px] text-slate-400">Qty: 0 Nos (Net)</p>
+                    <p class="text-[9px] text-emerald-400 mt-0.5">(Mat starts MM/MS)</p>
+                </div>
+
+                <div class="bg-slate-900/80 p-3 rounded-lg border border-emerald-500/40 relative">
+                    <div class="flex justify-between items-start">
+                        <p class="text-[11px] text-emerald-400 font-semibold uppercase">Service Sale</p>
+                        <span id="pctService" class="text-[10px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded font-bold border border-emerald-500/30">0%</span>
+                    </div>
+                    <h4 id="r1ServiceVal" class="text-base font-bold text-white mt-1">₹0</h4>
+                    <p id="r1ServiceQty" class="text-[10px] text-slate-400">Qty: 0 Services</p>
+                    <p class="text-[9px] text-emerald-400 mt-0.5">(ZSER)</p>
+                </div>
+
+                <div class="bg-slate-900/80 p-3 rounded-lg border border-teal-500/40 relative">
+                    <div class="flex justify-between items-start">
+                        <p class="text-[11px] text-teal-400 font-semibold uppercase">Other Sale</p>
+                        <span id="pctOther" class="text-[10px] bg-teal-950 text-teal-300 px-1.5 py-0.5 rounded font-bold border border-teal-500/30">0%</span>
+                    </div>
+                    <h4 id="r1OtherVal" class="text-base font-bold text-white mt-1">₹0</h4>
+                    <p id="r1OtherQty" class="text-[10px] text-slate-400">Qty: 0 Units</p>
+                    <p class="text-[9px] text-emerald-400 mt-0.5">(12,15,16,19)</p>
+                </div>
+
+                <div class="bg-slate-900/80 p-3 rounded-lg border border-fuchsia-500/40 relative">
+                    <div class="flex justify-between items-start">
+                        <p class="text-[11px] text-fuchsia-400 font-semibold uppercase">ZSUD/ZSUC Sale</p>
+                        <span id="pctZsud" class="text-[10px] bg-fuchsia-950 text-fuchsia-300 px-1.5 py-0.5 rounded font-bold border border-fuchsia-500/30">0%</span>
+                    </div>
+                    <h4 id="r1ZsudVal" class="text-base font-bold text-white mt-1">₹0</h4>
+                    <p id="r1ZsudQty" class="text-[10px] text-slate-400">Qty: 0 Units</p>
+                    <p class="text-[9px] text-fuchsia-400 mt-0.5">(ZSUD / ZSUC)</p>
+                </div>
+
+                <div class="bg-blue-950/60 p-3 rounded-lg border border-blue-400">
+                    <p class="text-[11px] text-blue-300 font-bold uppercase">Total Net Sale</p>
+                    <h4 id="r1SumVal" class="text-base font-extrabold text-blue-300 mt-1">₹0</h4>
+                    <p id="r1SumQty" class="text-[10px] text-slate-300">Sum All Excl. ZFOC & ZEFC</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROW 2: Card Layout for HPDC, LPDC, Domestic, Export -->
+        <div id="kpiRow2" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="bg-slate-800 p-3.5 rounded-xl border border-cyan-500/40 shadow-lg">
+                <div class="flex justify-between items-center">
+                    <p class="text-xs text-cyan-400 font-bold uppercase tracking-wider">HPDC Sale</p>
+                    <span id="pctHpdc" class="text-xs bg-cyan-900/80 text-cyan-200 px-2 py-0.5 rounded font-bold">0% Share</span>
+                </div>
+                <h4 id="r2HpdcVal" class="text-lg font-extrabold text-white mt-1">₹0</h4>
+                <p class="text-xs text-slate-400 mt-1">Qty: <span id="r2HpdcQty" class="text-slate-200 font-medium">0 Pcs</span></p>
+                <p class="text-[10px] text-slate-500 mt-0.5">(ZSAD+ZESO-ZCRO | Mat: 72, 52)</p>
+            </div>
+
+            <div class="bg-slate-800 p-3.5 rounded-xl border border-indigo-500/40 shadow-lg">
+                <div class="flex justify-between items-center">
+                    <p class="text-xs text-indigo-400 font-bold uppercase tracking-wider">LPDC Sale</p>
+                    <span id="pctLpdc" class="text-xs bg-indigo-900/80 text-indigo-200 px-2 py-0.5 rounded font-bold">0% Share</span>
+                </div>
+                <h4 id="r2LpdcVal" class="text-lg font-extrabold text-white mt-1">₹0</h4>
+                <p class="text-xs text-slate-400 mt-1">Qty: <span id="r2LpdcQty" class="text-slate-200 font-medium">0 Pcs</span></p>
+                <p class="text-[10px] text-slate-500 mt-0.5">(ZSAD+ZESO-ZCRO | Mat: 73, 53)</p>
+            </div>
+
+            <div class="bg-slate-800 p-3.5 rounded-xl border border-emerald-500/40 shadow-lg">
+                <div class="flex justify-between items-center">
+                    <p class="text-xs text-emerald-400 font-bold uppercase tracking-wider">Domestic Sale</p>
+                    <span id="pctDomestic" class="text-xs bg-emerald-900/80 text-emerald-200 px-2 py-0.5 rounded font-bold">0% Share</span>
+                </div>
+                <h4 id="r2DomesticVal" class="text-lg font-extrabold text-white mt-1">₹0</h4>
+                <p class="text-xs text-slate-400 mt-1">Qty: <span id="r2DomesticQty" class="text-slate-200 font-medium">0 Units</span></p>
+            </div>
+
+            <div class="bg-slate-800 p-3.5 rounded-xl border border-teal-500/40 shadow-lg">
+                <div class="flex justify-between items-center">
+                    <p class="text-xs text-teal-400 font-bold uppercase tracking-wider">Export Sale</p>
+                    <span id="pctExport" class="text-xs bg-teal-900/80 text-teal-200 px-2 py-0.5 rounded font-bold">0% Share</span>
+                </div>
+                <h4 id="r2ExportVal" class="text-lg font-extrabold text-white mt-1">₹0</h4>
+                <p class="text-xs text-slate-400 mt-1">Qty: <span id="r2ExportQty" class="text-slate-200 font-medium">0 Units</span></p>
+            </div>
+        </div>
+
+        <!-- ROW 3: Detailed Scrap, Returns & Free Sale Breakdown -->
+        <div id="kpiRow3" class="hidden grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div class="bg-slate-800 p-3.5 rounded-xl border border-orange-500/40 shadow-lg">
+                <p class="text-xs text-orange-400 font-bold uppercase">Scrap Chips Sale</p>
+                <h4 id="r3ChipsVal" class="text-lg font-extrabold text-white mt-1">₹0</h4>
+                <p id="r3ChipsQty" class="text-xs text-slate-400 mt-1">Qty: 0 Kg</p>
+            </div>
+
+            <div class="bg-slate-800 p-3.5 rounded-xl border border-red-500/40 shadow-lg">
+                <p class="text-xs text-red-400 font-bold uppercase">Scrap Dross Sale</p>
+                <h4 id="r3DrossVal" class="text-lg font-extrabold text-white mt-1">₹0</h4>
+                <p id="r3DrossQty" class="text-xs text-slate-400 mt-1">Qty: 0 Kg</p>
+            </div>
+
+            <div class="bg-slate-800 p-3.5 rounded-xl border border-rose-500/40 shadow-lg">
+                <p class="text-xs text-rose-400 font-bold uppercase">Total Return Val (ZCRO)</p>
+                <h4 id="r3ReturnVal" class="text-lg font-extrabold text-white mt-1">₹0</h4>
+                <p id="r3ReturnQty" class="text-xs text-slate-400 mt-1">Qty: 0 Pcs</p>
+            </div>
+
+            <div class="bg-slate-800 p-3.5 rounded-xl border border-cyan-500/40 shadow-lg">
+                <div class="flex justify-between items-center">
+                    <p class="text-xs text-cyan-400 font-bold uppercase">Free Sale (ZFOC + ZEFC)</p>
+                    <span id="pctFocR3" class="text-[11px] bg-cyan-900/80 text-cyan-200 px-2 py-0.5 rounded font-bold">0% Share</span>
+                </div>
+                <h4 id="r3FocVal" class="text-lg font-extrabold text-white mt-1">₹0</h4>
+                <p id="r3FocQty" class="text-xs text-slate-400 mt-1">Qty: 0 Pcs</p>
+            </div>
+        </div>
+
+        <!-- ROW 4 & 5 Analytics Charts -->
+        <div id="chartSection" class="hidden space-y-6">
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-md font-semibold text-slate-200">Daily Sales Trend</h2>
+                    <span id="dayChartLabel" class="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded">Day of Month</span>
+                </div>
+                <div class="h-80"><canvas id="chartDayWise"></canvas></div>
+            </div>
+
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-md font-semibold text-slate-200" id="custChartHeading">Customer-Wise Sales Analysis</h2>
+                    <span class="text-xs bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded font-semibold">Customer Breakdown</span>
+                </div>
+                <div class="h-80"><canvas id="chartCustomer"></canvas></div>
+            </div>
+
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-md font-semibold text-slate-200">Top Component / Material Intelligence</h2>
+                </div>
+                <div class="h-80"><canvas id="chartComponent"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Detailed Data Tables Tabbed Interface -->
+        <div id="tableSection" class="hidden bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+            <div class="border-b border-slate-700 flex flex-wrap bg-slate-800/80">
+                <button onclick="switchTab('tab-customer')" id="btn-tab-customer" class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-blue-500 text-blue-400">Customer Summary</button>
+                <button onclick="switchTab('tab-component')" id="btn-tab-component" class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200">Component Details</button>
+                <button onclick="switchTab('tab-tool')" id="btn-tab-tool" class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200">Tool Room Details</button>
+                <button onclick="switchTab('tab-mbd')" id="btn-tab-mbd" class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200">MBD Details</button>
+                <button onclick="switchTab('tab-scrap')" id="btn-tab-scrap" class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200">Scrap Details</button>
+                <button onclick="switchTab('tab-returns')" id="btn-tab-returns" class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200">Customer Returns Details (ZCRO)</button>
+                <button onclick="switchTab('tab-foc')" id="btn-tab-foc" class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200">Free Sale (ZFOC/ZEFC)</button>
+            </div>
+
+            <!-- Tab 1: Customer Summary -->
+            <div id="tab-customer" class="tab-content p-4 overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-700/50 text-slate-400 uppercase text-xs">
+                        <tr>
+                            <th class="p-3">Customer Plant</th>
+                            <th class="p-3 text-right">Sold Qty</th>
+                            <th class="p-3 text-right text-emerald-400">Gross Sales</th>
+                            <th class="p-3 text-right text-rose-400">Return Value (ZCRO)</th>
+                            <th class="p-3 text-right text-blue-400">Net Sales</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableCustomer" class="divide-y divide-slate-700"></tbody>
+                </table>
+            </div>
+
+            <!-- Tab 2: Component Details -->
+            <div id="tab-component" class="tab-content p-4 overflow-x-auto hidden">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-700/50 text-slate-400 uppercase text-xs">
+                        <tr>
+                            <th class="p-3">Material No</th>
+                            <th class="p-3">Description</th>
+                            <th class="p-3">Class</th>
+                            <th class="p-3 text-right">Sold Qty</th>
+                            <th class="p-3 text-right text-emerald-400">Gross Val</th>
+                            <th class="p-3 text-right text-rose-400">Return Val (ZCRO)</th>
+                            <th class="p-3 text-right text-blue-400">Net Sales</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableComponent" class="divide-y divide-slate-700"></tbody>
+                </table>
+            </div>
+
+            <!-- Tab 3: Tool Room Details -->
+            <div id="tab-tool" class="tab-content p-4 overflow-x-auto hidden">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-700/50 text-slate-400 uppercase text-xs">
+                        <tr>
+                            <th class="p-3">Material No</th>
+                            <th class="p-3">Description</th>
+                            <th class="p-3">Class</th>
+                            <th class="p-3 text-right">Sold Qty</th>
+                            <th class="p-3 text-right text-emerald-400">Gross Val</th>
+                            <th class="p-3 text-right text-rose-400">Return Val (ZCRO)</th>
+                            <th class="p-3 text-right text-blue-400">Net Sales</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableTool" class="divide-y divide-slate-700"></tbody>
+                </table>
+            </div>
+
+            <!-- Tab 4: MBD Details -->
+            <div id="tab-mbd" class="tab-content p-4 overflow-x-auto hidden">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-700/50 text-slate-400 uppercase text-xs">
+                        <tr>
+                            <th class="p-3">Material No</th>
+                            <th class="p-3">Description</th>
+                            <th class="p-3">Class</th>
+                            <th class="p-3 text-right">Sold Qty</th>
+                            <th class="p-3 text-right text-emerald-400">Gross Val</th>
+                            <th class="p-3 text-right text-rose-400">Return Val (ZCRO)</th>
+                            <th class="p-3 text-right text-blue-400">Net Sales</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableMbd" class="divide-y divide-slate-700"></tbody>
+                </table>
+            </div>
+
+            <!-- Tab 5: Scrap Details -->
+            <div id="tab-scrap" class="tab-content p-4 overflow-x-auto hidden">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-700/50 text-slate-400 uppercase text-xs">
+                        <tr>
+                            <th class="p-3">Material No</th>
+                            <th class="p-3">Description</th>
+                            <th class="p-3">Scrap Category</th>
+                            <th class="p-3 text-right">Sold Qty (Kg)</th>
+                            <th class="p-3 text-right text-emerald-400">Gross Val</th>
+                            <th class="p-3 text-right text-rose-400">Return Val (ZCRO)</th>
+                            <th class="p-3 text-right text-blue-400">Net Sales</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableScrap" class="divide-y divide-slate-700"></tbody>
+                </table>
+            </div>
+
+            <!-- Tab 6: Customer Returns -->
+            <div id="tab-returns" class="tab-content p-4 overflow-x-auto hidden">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-700/50 text-slate-400 uppercase text-xs">
+                        <tr>
+                            <th class="p-3">Date</th>
+                            <th class="p-3">Customer Plant</th>
+                            <th class="p-3">Material No</th>
+                            <th class="p-3">Description</th>
+                            <th class="p-3 text-right">Return Qty</th>
+                            <th class="p-3 text-right text-rose-400">Deducted Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableReturns" class="divide-y divide-slate-700"></tbody>
+                </table>
+            </div>
+
+            <!-- Tab 7: Free Sale (ZFOC/ZEFC) Details -->
+            <div id="tab-foc" class="tab-content p-4 overflow-x-auto hidden">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-700/50 text-slate-400 uppercase text-xs">
+                        <tr>
+                            <th class="p-3">Date</th>
+                            <th class="p-3">Customer Plant</th>
+                            <th class="p-3">Material No</th>
+                            <th class="p-3">Description</th>
+                            <th class="p-3">Type</th>
+                            <th class="p-3 text-right">Qty</th>
+                            <th class="p-3 text-right text-cyan-400">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableFoc" class="divide-y divide-slate-700"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        Chart.register(ChartDataLabels);
+
+        var rawData = [];
+        var ospMode = 'non-osp';
+        var displayUnit = 'lacs';
+        var chartInstances = {};
+
+        function getParentCustomerGroup(custName) {
+            if (!custName) return 'Other Customers';
+            var cUpper = String(custName).toUpperCase();
+
+            if (cUpper.includes('HERO')) return 'Hero MotoCorp';
+            if (cUpper.includes('TVS')) return 'TVS Motor';
+            if (cUpper.includes('ROCKMAN')) return 'Rockman Industries';
+
+            return custName;
+        }
+
+        function parseExcelDate(val) {
+            if (!val) return 'N/A';
+            
+            if (val instanceof Date) {
+                var year = val.getFullYear();
+                var month = String(val.getMonth() + 1).padStart(2, '0');
+                var day = String(val.getDate()).padStart(2, '0');
+                return year + '-' + month + '-' + day;
+            }
+            
+            if (typeof val === 'number') {
+                var dateObj = new Date(Math.round((val - 25569) * 86400 * 1000));
+                var tzOffset = dateObj.getTimezoneOffset() * 60000;
+                var localDate = new Date(dateObj.getTime() + tzOffset);
+                var year = localDate.getFullYear();
+                var month = String(localDate.getMonth() + 1).padStart(2, '0');
+                var day = String(localDate.getDate()).padStart(2, '0');
+                return year + '-' + month + '-' + day;
+            }
+
+            var strVal = String(val).trim();
+            if (strVal.includes('T')) {
+                strVal = strVal.split('T')[0];
+            }
+            
+            if (strVal.includes('/')) {
+                var parts = strVal.split('/');
+                if (parts.length === 3) {
+                    if (parts[0].length === 4) {
+                        return parts[0] + '-' + String(parts[1]).padStart(2, '0') + '-' + String(parts[2]).padStart(2, '0');
+                    } else if (parts[2].length === 4) {
+                        return parts[2] + '-' + String(parts[0]).padStart(2, '0') + '-' + String(parts[1]).padStart(2, '0');
+                    }
+                }
+            }
+            return strVal;
+        }
+
+        function getFinancialYear(dateStr) {
+            if (!dateStr || dateStr.length < 7) return 'Unknown FY';
+            var parts = dateStr.split('-');
+            var year = parseInt(parts[0], 10);
+            var month = parseInt(parts[1], 10);
+            if (isNaN(year) || isNaN(month)) return 'Unknown FY';
+            if (month >= 4) {
+                return 'FY ' + year + '-' + String(year + 1).slice(-2);
+            } else {
+                return 'FY ' + (year - 1) + '-' + String(year).slice(-2);
+            }
+        }
+
+        function formatDisplayValue(val) {
+            if (val === undefined || val === null || isNaN(val)) return '0';
+
+            if (displayUnit === 'lacs') {
+                var inLacs = val / 100000;
+                return '₹' + inLacs.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' L';
+            } else if (displayUnit === 'cr') {
+                var inCr = val / 10000000;
+                return '₹' + inCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Cr';
+            } else {
+                return '₹' + Math.round(val).toLocaleString('en-IN');
+            }
+        }
+
+        function switchUnit(unit) {
+            displayUnit = unit;
+            document.getElementById('btnUnitActual').className = unit === 'actual' ? "px-2 py-1 rounded-md bg-amber-600 text-white transition" : "px-2 py-1 rounded-md text-slate-400 hover:text-white transition";
+            document.getElementById('btnUnitLacs').className = unit === 'lacs' ? "px-2 py-1 rounded-md bg-amber-600 text-white transition" : "px-2 py-1 rounded-md text-slate-400 hover:text-white transition";
+            document.getElementById('btnUnitCr').className = unit === 'cr' ? "px-2 py-1 rounded-md bg-amber-600 text-white transition" : "px-2 py-1 rounded-md text-slate-400 hover:text-white transition";
+
+            if (rawData.length > 0) processDashboardData();
+        }
+
+        function switchOspMode(mode) {
+            ospMode = mode;
+            document.getElementById('btnNonOsp').className = mode === 'non-osp' ? "px-2 py-1 rounded-md bg-emerald-600 text-white transition" : "px-2 py-1 rounded-md text-slate-400 hover:text-white transition";
+            document.getElementById('btnOspOnly').className = mode === 'osp' ? "px-2 py-1 rounded-md bg-teal-600 text-white transition" : "px-2 py-1 rounded-md text-slate-400 hover:text-white transition";
+
+            if (rawData.length > 0) processDashboardData();
+        }
+
+        function switchTab(tabId) {
+            var contents = document.querySelectorAll('.tab-content');
+            for(var i=0; i<contents.length; i++) contents[i].classList.add('hidden');
+
+            var btns = document.querySelectorAll('.tab-btn');
+            for(var j=0; j<btns.length; j++) {
+                btns[j].classList.remove('border-blue-500', 'text-blue-400');
+                btns[j].classList.add('border-transparent', 'text-slate-400');
+            }
+
+            document.getElementById(tabId).classList.remove('hidden');
+            var activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.remove('border-transparent', 'text-slate-400');
+            activeBtn.classList.add('border-blue-500', 'text-blue-400');
+        }
+
+        function handleFileUpload(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    var bstr = evt.target.result;
+                    var workbook = XLSX.read(bstr, { type: 'binary', cellDates: false });
+                    var sheetName = workbook.SheetNames[0];
+                    var sheet = workbook.Sheets[sheetName];
+                    rawData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+                    updateCascadedFilters('');
+
+                    document.getElementById('uploadPrompt').classList.add('hidden');
+                    document.getElementById('kpiRow1').classList.remove('hidden');
+                    document.getElementById('kpiRow2').classList.remove('hidden');
+                    document.getElementById('kpiRow3').classList.remove('hidden');
+                    document.getElementById('chartSection').classList.remove('hidden');
+                    document.getElementById('tableSection').classList.remove('hidden');
+
+                    processDashboardData();
+                } catch(err) {
+                    alert('Error parsing Excel file: ' + err.message);
+                }
+            };
+            reader.readAsBinaryString(file);
+        }
+
+        // Cross-Filtering Dropdown Core Logic
+        function updateDropdownOptions(selectId, optionsMap, defaultText) {
+            var selectEl = document.getElementById(selectId);
+            var currentValue = selectEl.value;
+            
+            selectEl.innerHTML = '<option value="ALL">' + defaultText + '</option>';
+            
+            var sortedKeys = Array.from(optionsMap.keys()).sort();
+            var hasCurrentValue = false;
+
+            for (var i = 0; i < sortedKeys.length; i++) {
+                var key = sortedKeys[i];
+                var label = optionsMap.get(key);
+                var opt = document.createElement('option');
+                opt.value = key;
+                opt.innerText = label;
+                if (key === currentValue) hasCurrentValue = true;
+                selectEl.appendChild(opt);
+            }
+
+            if (hasCurrentValue) {
+                selectEl.value = currentValue;
+            } else {
+                selectEl.value = 'ALL';
+            }
+        }
+
+        function updateCascadedFilters(changedFilterId) {
+            var selectedFy = document.getElementById('fySelect').value;
+            var selectedMonth = document.getElementById('monthSelect').value;
+            var filterMode = document.getElementById('monthFilterMode').value;
+            var selectedDate = document.getElementById('dateSelect').value;
+            var selectedClass = document.getElementById('classSelect').value;
+            var selectedCustomer = document.getElementById('customerSelect').value;
+            var selectedComponent = document.getElementById('componentSelect').value;
+            var selectedOrderType = document.getElementById('orderTypeSelect').value;
+
+            var fySet = new Set();
+            var monthSet = new Set();
+            var dateSet = new Set();
+            var classMap = new Map();
+            var customerGroupMap = new Map();
+            var componentMap = new Map();
+
+            for (var i = 0; i < rawData.length; i++) {
+                var row = rawData[i];
+                var dateStr = parseExcelDate(row['INVDAT'] || row['DATE'] || row['Date']);
+                var monthStr = (dateStr && dateStr.length >= 7) ? dateStr.substring(0, 7) : '';
+                var fy = getFinancialYear(dateStr);
+
+                var rawClass = String(row['CLASS'] || row['Class'] || '').trim();
+                var custPlant = String(row['CUST.NAME'] || row['CUSTOMER'] || row['Customer'] || 'Unknown').trim();
+                var parentCustGroup = getParentCustomerGroup(custPlant);
+                var matNo = String(row['MATERIAL NO'] || row['Material No'] || row['PART CODE'] || '').trim();
+                var matDesc = String(row['MATERIAL DESC'] || row['Material Desc'] || '').trim();
+                var orderType = String(row['ORDER TYPE'] || row['Order Type'] || row['ORDER_TYPE'] || '').trim().toUpperCase();
+
+                if (selectedFy !== 'ALL' && changedFilterId !== 'fySelect' && fy !== selectedFy) continue;
+                
+                if (selectedMonth !== 'ALL' && changedFilterId !== 'monthSelect') {
+                    if (filterMode === 'SINGLE' && monthStr !== selectedMonth) continue;
+                    if (filterMode === 'YTD' && monthStr > selectedMonth) continue;
+                }
+
+                if (selectedDate !== 'ALL' && changedFilterId !== 'dateSelect' && dateStr !== selectedDate) continue;
+                if (selectedClass !== 'ALL' && changedFilterId !== 'classSelect' && rawClass !== selectedClass) continue;
+                if (selectedCustomer !== 'ALL' && changedFilterId !== 'customerSelect' && parentCustGroup !== selectedCustomer) continue;
+                if (selectedComponent !== 'ALL' && changedFilterId !== 'componentSelect' && matNo !== selectedComponent) continue;
+
+                if (selectedOrderType !== 'ALL' && changedFilterId !== 'orderTypeSelect') {
+                    if (selectedOrderType === 'ZSUD_ZSUC') {
+                        if (orderType !== 'ZSUD' && orderType !== 'ZSUC') continue;
+                    } else if (orderType !== selectedOrderType) {
+                        continue;
+                    }
+                }
+
+                if (fy !== 'Unknown FY') fySet.add(fy);
+                if (monthStr && monthStr.length === 7) monthSet.add(monthStr);
+                if (dateStr && dateStr.length === 10) dateSet.add(dateStr);
+                if (rawClass) classMap.set(rawClass, rawClass);
+                if (parentCustGroup) customerGroupMap.set(parentCustGroup, parentCustGroup);
+                if (matNo) componentMap.set(matNo, matDesc ? matNo + ' - ' + matDesc : matNo);
+            }
+
+            if (changedFilterId !== 'fySelect') {
+                var fyMap = new Map(Array.from(fySet).map(function(v){ return [v, v]; }));
+                updateDropdownOptions('fySelect', fyMap, 'All FY');
+            }
+
+            if (changedFilterId !== 'monthSelect') {
+                var mMap = new Map(Array.from(monthSet).map(function(v){ return [v, v]; }));
+                updateDropdownOptions('monthSelect', mMap, 'All Months');
+            }
+
+            if (changedFilterId !== 'dateSelect') {
+                var dMap = new Map(Array.from(dateSet).map(function(v){ return [v, v]; }));
+                updateDropdownOptions('dateSelect', dMap, 'All Dates');
+            }
+
+            if (changedFilterId !== 'classSelect') {
+                updateDropdownOptions('classSelect', classMap, 'All Class');
+            }
+
+            if (changedFilterId !== 'customerSelect') {
+                updateDropdownOptions('customerSelect', customerGroupMap, 'All Customers');
+            }
+
+            if (changedFilterId !== 'componentSelect') {
+                updateDropdownOptions('componentSelect', componentMap, 'All Components');
+            }
+        }
+
+        function onFilterChange(changedFilterId) {
+            updateCascadedFilters(changedFilterId);
+            processDashboardData();
+        }
+
+        function resetToYtdView() {
+            document.getElementById('fySelect').value = 'ALL';
+            document.getElementById('monthFilterMode').value = 'YTD';
+            document.getElementById('monthSelect').value = 'ALL';
+            document.getElementById('dateSelect').value = 'ALL';
+            document.getElementById('classSelect').value = 'ALL';
+            document.getElementById('customerSelect').value = 'ALL';
+            document.getElementById('componentSelect').value = 'ALL';
+            document.getElementById('orderTypeSelect').value = 'ALL';
+            
+            updateCascadedFilters('');
+            processDashboardData();
+        }
+
+        function processDashboardData() {
+            if (!rawData || rawData.length === 0) return;
+
+            var selectedFy = document.getElementById('fySelect').value;
+            var selectedMonth = document.getElementById('monthSelect').value;
+            var filterMode = document.getElementById('monthFilterMode').value;
+            var selectedDate = document.getElementById('dateSelect').value;
+            var selectedClass = document.getElementById('classSelect').value;
+            var selectedCustomer = document.getElementById('customerSelect').value;
+            var selectedComponent = document.getElementById('componentSelect').value;
+            var selectedOrderType = document.getElementById('orderTypeSelect').value;
+
+            var grandTotalSale = 0;
+            var totalReturnVal = 0, totalReturnQty = 0;
+
+            var mbdNetVal = 0, mbdNetQty = 0;
+            var toolNetVal = 0, toolNetQty = 0;
+            var serviceNetVal = 0, serviceNetQty = 0;
+            var otherNetVal = 0, otherNetQty = 0;
+            var zsudNetVal = 0, zsudNetQty = 0;
+
+            var scrapChipsVal = 0, scrapChipsQty = 0;
+            var scrapDrossVal = 0, scrapDrossQty = 0;
+
+            var hpdcNetVal = 0, hpdcNetQty = 0;
+            var lpdcNetVal = 0, lpdcNetQty = 0;
+
+            var focVal = 0, focQty = 0;
+
+            var exportVal = 0, exportQty = 0;
+            var domesticVal = 0, domesticQty = 0;
+
+            var dayMap = {}, customerMap = {}, partMap = {}, toolMap = {}, mbdMap = {}, scrapMap = {};
+            var returnList = [], focList = [];
+
+            for (var i = 0; i < rawData.length; i++) {
+                var row = rawData[i];
+                var qty = parseFloat(row['INVOICE QTY'] || row['QTY'] || row['Qty'] || 0);
+                var rawVal = parseFloat(row['VALUE IN LOCAL CURRENCY'] || row['VALUE'] || row['Value'] || 0);
+                var hmclVal = Math.abs(parseFloat(row['HMCL VALUE'] || row['HMCL Value'] || 0));
+                var dateStr = parseExcelDate(row['INVDAT'] || row['DATE'] || row['Date']);
+                var monthStr = (dateStr && dateStr.length >= 7) ? dateStr.substring(0, 7) : 'Unknown';
+                var fy = getFinancialYear(dateStr);
+                
+                var custPlant = String(row['CUST.NAME'] || row['CUSTOMER'] || row['Customer'] || 'Unknown').trim();
+                var parentCustGroup = getParentCustomerGroup(custPlant);
+
+                var matNo = String(row['MATERIAL NO'] || row['Material No'] || row['PART CODE'] || '').trim();
+                var matDesc = row['MATERIAL DESC'] || row['Material Desc'] || 'N/A';
+                var orderType = String(row['ORDER TYPE'] || row['Order Type'] || row['ORDER_TYPE'] || '').trim().toUpperCase();
+                var desc = String(row['DESCRIPTION'] || row['Description'] || '').toUpperCase();
+                var rawClass = String(row['CLASS'] || row['Class'] || '').trim();
+
+                if (selectedCustomer !== 'ALL' && parentCustGroup !== selectedCustomer) continue;
+                if (selectedClass !== 'ALL' && rawClass !== selectedClass) continue;
+                if (selectedComponent !== 'ALL' && matNo !== selectedComponent) continue;
+                
+                if (selectedOrderType !== 'ALL') {
+                    if (selectedOrderType === 'ZSUD_ZSUC') {
+                        if (orderType !== 'ZSUD' && orderType !== 'ZSUC') continue;
+                    } else if (orderType !== selectedOrderType) {
+                        continue;
+                    }
+                }
+
+                if (selectedFy !== 'ALL' && fy !== selectedFy) continue;
+                
+                if (selectedMonth !== 'ALL') {
+                    if (filterMode === 'SINGLE' && monthStr !== selectedMonth) continue;
+                    if (filterMode === 'YTD' && monthStr > selectedMonth) continue;
+                }
+                
+                if (selectedDate !== 'ALL' && dateStr !== selectedDate) continue;
+
+                var nonOspVal = rawVal;
+                var netOspJobWorkVal = rawVal >= 0 ? Math.max(0, rawVal - hmclVal) : -(Math.abs(rawVal) - hmclVal);
+                var val = (ospMode === 'osp') ? netOspJobWorkVal : nonOspVal;
+
+                if (orderType === 'ZFOC' || orderType === 'ZEFC') {
+                    focVal += val;
+                    focQty += qty;
+                    focList.push({ date: dateStr, cust: custPlant, matNo: matNo, desc: matDesc, type: orderType, qty: qty, val: val });
+                    continue;
+                }
+
+                grandTotalSale += val;
+
+                var isReturn = (orderType === 'ZCRO');
+
+                if (isReturn) {
+                    var absVal = Math.abs(val);
+                    var absQty = Math.abs(qty);
+                    totalReturnVal += absVal;
+                    totalReturnQty += absQty;
+                    returnList.push({ date: dateStr, cust: custPlant, matNo: matNo, desc: matDesc, qty: absQty, val: absVal });
+                }
+
+                var matNoUpper = matNo.toUpperCase();
+
+                if ((orderType === 'ZSAD' || orderType === 'ZESO' || orderType === 'ZCRO') && matNoUpper.startsWith('T')) {
+                    toolNetVal += val;
+                    toolNetQty += qty;
+
+                    if (!toolMap[matNo]) toolMap[matNo] = { desc: matDesc, rawClass: rawClass, qty: 0, val: 0, retVal: 0 };
+                    if (isReturn) {
+                        toolMap[matNo].retVal += Math.abs(val);
+                    } else {
+                        toolMap[matNo].qty += qty;
+                        toolMap[matNo].val += val;
+                    }
+                } 
+                else if ((orderType === 'ZSAD' || orderType === 'ZESO' || orderType === 'ZCRO') && (matNoUpper.startsWith('MM') || matNoUpper.startsWith('MS'))) {
+                    mbdNetVal += val;
+                    mbdNetQty += qty;
+
+                    if (!mbdMap[matNo]) mbdMap[matNo] = { desc: matDesc, rawClass: rawClass, qty: 0, val: 0, retVal: 0 };
+                    if (isReturn) {
+                        mbdMap[matNo].retVal += Math.abs(val);
+                    } else {
+                        mbdMap[matNo].qty += qty;
+                        mbdMap[matNo].val += val;
+                    }
+                } 
+                else if (orderType === 'ZSCS') {
+                    var combinedDesc = matDesc.toUpperCase() + " " + desc;
+                    var categoryName = "Scrap Chips";
+                    if (combinedDesc.includes('DROSS') || combinedDesc.includes('SLAG') || combinedDesc.includes('SKIM')) {
+                        scrapDrossVal += val;
+                        scrapDrossQty += qty;
+                        categoryName = "Scrap Dross";
+                    } else {
+                        scrapChipsVal += val;
+                        scrapChipsQty += qty;
+                    }
+
+                    if (!scrapMap[matNo]) scrapMap[matNo] = { desc: matDesc, category: categoryName, qty: 0, val: 0, retVal: 0 };
+                    if (isReturn) {
+                        scrapMap[matNo].retVal += Math.abs(val);
+                    } else {
+                        scrapMap[matNo].qty += qty;
+                        scrapMap[matNo].val += val;
+                    }
+                } 
+                else if (orderType === 'ZSER') {
+                    serviceNetVal += val;
+                    serviceNetQty += qty;
+                }
+                else if (orderType === 'ZSUD' || orderType === 'ZSUC') {
+                    zsudNetVal += val;
+                    zsudNetQty += qty;
+                }
+                else if ((orderType === 'ZSAD' || orderType === 'ZESO' || orderType === 'ZCRO') && (matNoUpper.startsWith('73') || matNoUpper.startsWith('53'))) {
+                    lpdcNetVal += val;
+                    lpdcNetQty += qty;
+
+                    if (!partMap[matNo]) partMap[matNo] = { desc: matDesc, rawClass: rawClass, qty: 0, val: 0, retVal: 0 };
+                    if (isReturn) {
+                        partMap[matNo].retVal += Math.abs(val);
+                    } else {
+                        partMap[matNo].qty += qty;
+                        partMap[matNo].val += val;
+                    }
+                }
+                else if ((orderType === 'ZSAD' || orderType === 'ZESO' || orderType === 'ZCRO') && (matNoUpper.startsWith('72') || matNoUpper.startsWith('52'))) {
+                    hpdcNetVal += val;
+                    hpdcNetQty += qty;
+
+                    if (!partMap[matNo]) partMap[matNo] = { desc: matDesc, rawClass: rawClass, qty: 0, val: 0, retVal: 0 };
+                    if (isReturn) {
+                        partMap[matNo].retVal += Math.abs(val);
+                    } else {
+                        partMap[matNo].qty += qty;
+                        partMap[matNo].val += val;
+                    }
+                }
+                else if ((orderType === 'ZSAD' || orderType === 'ZESO' || orderType === 'ZCRO') && 
+                        (matNoUpper.startsWith('12') || matNoUpper.startsWith('15') || matNoUpper.startsWith('16') || matNoUpper.startsWith('19'))) {
+                    otherNetVal += val;
+                    otherNetQty += qty;
+                }
+                else {
+                    if (!partMap[matNo]) partMap[matNo] = { desc: matDesc, rawClass: rawClass, qty: 0, val: 0, retVal: 0 };
+                    if (isReturn) {
+                        partMap[matNo].retVal += Math.abs(val);
+                    } else {
+                        partMap[matNo].qty += qty;
+                        partMap[matNo].val += val;
+                    }
+                }
+
+                if (orderType === 'ZESO') {
+                    exportVal += val;
+                    exportQty += qty;
+                } else {
+                    domesticVal += val;
+                    domesticQty += qty;
+                }
+
+                if (!dayMap[dateStr]) dayMap[dateStr] = { val: 0, qty: 0 };
+                dayMap[dateStr].val += val;
+                dayMap[dateStr].qty += qty;
+
+                if (!customerMap[custPlant]) customerMap[custPlant] = { qty: 0, val: 0, retVal: 0 };
+                if (isReturn) {
+                    customerMap[custPlant].retVal += Math.abs(val);
+                } else {
+                    customerMap[custPlant].qty += qty;
+                    customerMap[custPlant].val += val;
+                }
+            }
+
+            var compNetVal = hpdcNetVal + lpdcNetVal;
+            var compNetQty = hpdcNetQty + lpdcNetQty;
+
+            var totalScrapVal = scrapChipsVal + scrapDrossVal;
+            var totalScrapQty = scrapChipsQty + scrapDrossQty;
+
+            var grossTurnoverCombined = grandTotalSale + focVal;
+            var pctComp = grandTotalSale !== 0 ? ((compNetVal / grandTotalSale) * 100).toFixed(1) : 0;
+            var pctFoc = grossTurnoverCombined !== 0 ? ((focVal / grossTurnoverCombined) * 100).toFixed(1) : 0;
+            var pctScrap = grandTotalSale !== 0 ? ((totalScrapVal / grandTotalSale) * 100).toFixed(1) : 0;
+            var pctTool = grandTotalSale !== 0 ? ((toolNetVal / grandTotalSale) * 100).toFixed(1) : 0;
+            var pctMbd = grandTotalSale !== 0 ? ((mbdNetVal / grandTotalSale) * 100).toFixed(1) : 0;
+            var pctService = grandTotalSale !== 0 ? ((serviceNetVal / grandTotalSale) * 100).toFixed(1) : 0;
+            var pctOther = grandTotalSale !== 0 ? ((otherNetVal / grandTotalSale) * 100).toFixed(1) : 0;
+            var pctZsud = grandTotalSale !== 0 ? ((zsudNetVal / grandTotalSale) * 100).toFixed(1) : 0;
+
+            document.getElementById('r1CompVal').innerText = formatDisplayValue(compNetVal);
+            document.getElementById('r1CompQty').innerText = 'Qty: ' + Math.round(compNetQty).toLocaleString('en-IN') + ' Pcs';
+            document.getElementById('pctComp').innerText = pctComp + '%';
+
+            document.getElementById('r1ScrapVal').innerText = formatDisplayValue(totalScrapVal);
+            document.getElementById('r1ScrapQty').innerText = 'Qty: ' + Math.round(totalScrapQty).toLocaleString('en-IN') + ' Kg';
+            document.getElementById('pctScrap').innerText = pctScrap + '%';
+
+            document.getElementById('r1ToolVal').innerText = formatDisplayValue(toolNetVal);
+            document.getElementById('r1ToolQty').innerText = 'Qty: ' + Math.round(toolNetQty).toLocaleString('en-IN') + ' Set';
+            document.getElementById('pctTool').innerText = pctTool + '%';
+
+            document.getElementById('r1MbdVal').innerText = formatDisplayValue(mbdNetVal);
+            document.getElementById('r1MbdQty').innerText = 'Qty: ' + Math.round(mbdNetQty).toLocaleString('en-IN') + ' Nos';
+            document.getElementById('pctMbd').innerText = pctMbd + '%';
+
+            document.getElementById('r1ServiceVal').innerText = formatDisplayValue(serviceNetVal);
+            document.getElementById('r1ServiceQty').innerText = 'Qty: ' + Math.round(serviceNetQty).toLocaleString('en-IN') + ' Serv';
+            document.getElementById('pctService').innerText = pctService + '%';
+
+            document.getElementById('r1OtherVal').innerText = formatDisplayValue(otherNetVal);
+            document.getElementById('r1OtherQty').innerText = 'Qty: ' + Math.round(otherNetQty).toLocaleString('en-IN') + ' Units';
+            document.getElementById('pctOther').innerText = pctOther + '%';
+
+            document.getElementById('r1ZsudVal').innerText = formatDisplayValue(zsudNetVal);
+            document.getElementById('r1ZsudQty').innerText = 'Qty: ' + Math.round(zsudNetQty).toLocaleString('en-IN') + ' Units';
+            document.getElementById('pctZsud').innerText = pctZsud + '%';
+
+            document.getElementById('r1SumVal').innerText = formatDisplayValue(grandTotalSale);
+            document.getElementById('row1TotalSale').innerText = formatDisplayValue(grandTotalSale);
+
+            var pctHpdc = compNetVal > 0 ? ((hpdcNetVal / compNetVal) * 100).toFixed(1) : 0;
+            var pctLpdc = compNetVal > 0 ? ((lpdcNetVal / compNetVal) * 100).toFixed(1) : 0;
+
+            var totalDomExpVal = domesticVal + exportVal;
+            var pctDomestic = totalDomExpVal > 0 ? ((domesticVal / totalDomExpVal) * 100).toFixed(1) : 0;
+            var pctExport = totalDomExpVal > 0 ? ((exportVal / totalDomExpVal) * 100).toFixed(1) : 0;
+
+            document.getElementById('r2HpdcVal').innerText = formatDisplayValue(hpdcNetVal);
+            document.getElementById('r2HpdcQty').innerText = Math.round(hpdcNetQty).toLocaleString('en-IN') + ' Pcs';
+            document.getElementById('pctHpdc').innerText = pctHpdc + '% Share';
+
+            document.getElementById('r2LpdcVal').innerText = formatDisplayValue(lpdcNetVal);
+            document.getElementById('r2LpdcQty').innerText = Math.round(lpdcNetQty).toLocaleString('en-IN') + ' Pcs';
+            document.getElementById('pctLpdc').innerText = pctLpdc + '% Share';
+
+            document.getElementById('r2DomesticVal').innerText = formatDisplayValue(domesticVal);
+            document.getElementById('r2DomesticQty').innerText = Math.round(domesticQty).toLocaleString('en-IN') + ' Units';
+            document.getElementById('pctDomestic').innerText = pctDomestic + '% Share';
+
+            document.getElementById('r2ExportVal').innerText = formatDisplayValue(exportVal);
+            document.getElementById('r2ExportQty').innerText = Math.round(exportQty).toLocaleString('en-IN') + ' Units';
+            document.getElementById('pctExport').innerText = pctExport + '% Share';
+
+            document.getElementById('r3ChipsVal').innerText = formatDisplayValue(scrapChipsVal);
+            document.getElementById('r3ChipsQty').innerText = 'Qty: ' + Math.round(scrapChipsQty).toLocaleString('en-IN') + ' Kg';
+
+            document.getElementById('r3DrossVal').innerText = formatDisplayValue(scrapDrossVal);
+            document.getElementById('r3DrossQty').innerText = 'Qty: ' + Math.round(scrapDrossQty).toLocaleString('en-IN') + ' Kg';
+
+            document.getElementById('r3ReturnVal').innerText = formatDisplayValue(totalReturnVal);
+            document.getElementById('r3ReturnQty').innerText = 'Qty: ' + Math.round(totalReturnQty).toLocaleString('en-IN') + ' Pcs';
+
+            document.getElementById('r3FocVal').innerText = formatDisplayValue(focVal);
+            document.getElementById('r3FocQty').innerText = 'Qty: ' + Math.round(focQty).toLocaleString('en-IN') + ' Pcs';
+            document.getElementById('pctFocR3').innerText = pctFoc + '% Share';
+
+            renderDayChart(dayMap);
+            renderCustomerChart(customerMap, grandTotalSale);
+            renderComponentChart(partMap, grandTotalSale);
+
+            renderCustomerTable(customerMap);
+            renderComponentTable(partMap);
+            renderToolTable(toolMap);
+            renderMbdTable(mbdMap);
+            renderScrapTable(scrapMap);
+            renderReturnsTable(returnList);
+            renderFocTable(focList);
+        }
+
+        function renderDayChart(map) {
+            var sortedDates = Object.keys(map).sort();
+            var dayNumbers = sortedDates.map(function(d) {
+                var parts = d.split('-');
+                return parts.length === 3 ? parseInt(parts[2], 10) : d;
+            });
+            var values = sortedDates.map(function(d) { return map[d].val; });
+            
+            if (chartInstances['chartDayWise']) chartInstances['chartDayWise'].destroy();
+            var ctx = document.getElementById('chartDayWise').getContext('2d');
+            chartInstances['chartDayWise'] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dayNumbers,
+                    datasets: [{
+                        label: 'Daily Sales',
+                        data: values,
+                        backgroundColor: '#38bdf8',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { top: 20 } },
+                    plugins: { 
+                        legend: { display: false }, 
+                        datalabels: { 
+                            display: true, 
+                            anchor: 'end', 
+                            align: 'top', 
+                            color: '#94a3b8', 
+                            font: { size: 10, weight: 'bold' },
+                            formatter: function(val) { return formatDisplayValue(val); }
+                        } 
+                    },
+                    scales: {
+                        x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8', callback: function(v){ return formatDisplayValue(v); } } }
+                    }
+                }
+            });
+        }
+
+        function renderCustomerChart(map, totalSum) {
+            var keys = Object.keys(map).sort(function(a,b){ return map[b].val - map[a].val; }).slice(0, 10);
+            var labels = keys.map(function(k){ return k.length > 20 ? k.substring(0, 20) + '...' : k; });
+            var data = keys.map(function(k){ return map[k].val; });
+
+            if (chartInstances['chartCustomer']) chartInstances['chartCustomer'].destroy();
+            var ctx = document.getElementById('chartCustomer').getContext('2d');
+            chartInstances['chartCustomer'] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Customer Sales',
+                        data: data,
+                        backgroundColor: '#f43f5e',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { top: 20 } },
+                    plugins: { 
+                        legend: { display: false }, 
+                        datalabels: { 
+                            display: true, 
+                            anchor: 'end', 
+                            align: 'top', 
+                            color: '#fda4af', 
+                            font: { size: 10, weight: 'bold' },
+                            formatter: function(val) { return formatDisplayValue(val); }
+                        } 
+                    },
+                    scales: {
+                        x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8', callback: function(v){ return formatDisplayValue(v); } } }
+                    }
+                }
+            });
+        }
+
+        function renderComponentChart(map, totalSum) {
+            var keys = Object.keys(map).sort(function(a,b){ return map[b].val - map[a].val; }).slice(0, 10);
+            var labels = keys.map(function(k){ 
+                var desc = map[k].desc || k;
+                return desc.length > 22 ? desc.substring(0, 22) + '...' : desc;
+            });
+            var data = keys.map(function(k){ return map[k].val; });
+
+            if (chartInstances['chartComponent']) chartInstances['chartComponent'].destroy();
+            var ctx = document.getElementById('chartComponent').getContext('2d');
+            chartInstances['chartComponent'] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Component Sales',
+                        data: data,
+                        backgroundColor: '#fbbf24',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { top: 20 } },
+                    plugins: { 
+                        legend: { display: false }, 
+                        datalabels: { 
+                            display: true, 
+                            anchor: 'end', 
+                            align: 'top', 
+                            color: '#fde68a', 
+                            font: { size: 10, weight: 'bold' },
+                            formatter: function(val) { return formatDisplayValue(val); }
+                        } 
+                    },
+                    scales: {
+                        x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8', callback: function(v){ return formatDisplayValue(v); } } }
+                    }
+                }
+            });
+        }
+
+        function renderCustomerTable(map) {
+            var tbody = document.getElementById('tableCustomer');
+            var html = '';
+            for (var c in map) {
+                var item = map[c];
+                var net = item.val - item.retVal;
+                html += '<tr class="hover:bg-slate-700/30">' +
+                    '<td class="p-3 font-medium text-slate-200">' + c + '</td>' +
+                    '<td class="p-3 text-right">' + Math.round(item.qty).toLocaleString('en-IN') + '</td>' +
+                    '<td class="p-3 text-right text-emerald-400">' + formatDisplayValue(item.val) + '</td>' +
+                    '<td class="p-3 text-right text-rose-400">' + formatDisplayValue(item.retVal) + '</td>' +
+                    '<td class="p-3 text-right font-bold text-blue-400">' + formatDisplayValue(net) + '</td>' +
+                '</tr>';
+            }
+            tbody.innerHTML = html;
+        }
+
+        function renderComponentTable(map) {
+            var tbody = document.getElementById('tableComponent');
+            var html = '';
+            for (var m in map) {
+                var item = map[m];
+                var net = item.val - item.retVal;
+                html += '<tr class="hover:bg-slate-700/30">' +
+                    '<td class="p-3 font-medium text-amber-300">' + m + '</td>' +
+                    '<td class="p-3">' + item.desc + '</td>' +
+                    '<td class="p-3"><span class="bg-slate-700 px-2 py-0.5 rounded text-xs">' + item.rawClass + '</span></td>' +
+                    '<td class="p-3 text-right">' + Math.round(item.qty).toLocaleString('en-IN') + '</td>' +
+                    '<td class="p-3 text-right text-emerald-400">' + formatDisplayValue(item.val) + '</td>' +
+                    '<td class="p-3 text-right text-rose-400">' + formatDisplayValue(item.retVal) + '</td>' +
+                    '<td class="p-3 text-right font-bold text-blue-400">' + formatDisplayValue(net) + '</td>' +
+                '</tr>';
+            }
+            tbody.innerHTML = html;
+        }
+
+        function renderToolTable(map) {
+            var tbody = document.getElementById('tableTool');
+            var html = '';
+            for (var m in map) {
+                var item = map[m];
+                var net = item.val - item.retVal;
+                html += '<tr class="hover:bg-slate-700/30">' +
+                    '<td class="p-3 font-medium text-amber-300">' + m + '</td>' +
+                    '<td class="p-3">' + item.desc + '</td>' +
+                    '<td class="p-3"><span class="bg-slate-700 px-2 py-0.5 rounded text-xs">' + item.rawClass + '</span></td>' +
+                    '<td class="p-3 text-right">' + Math.round(item.qty).toLocaleString('en-IN') + '</td>' +
+                    '<td class="p-3 text-right text-emerald-400">' + formatDisplayValue(item.val) + '</td>' +
+                    '<td class="p-3 text-right text-rose-400">' + formatDisplayValue(item.retVal) + '</td>' +
+                    '<td class="p-3 text-right font-bold text-blue-400">' + formatDisplayValue(net) + '</td>' +
+                '</tr>';
+            }
+            tbody.innerHTML = html;
+        }
+
+        function renderMbdTable(map) {
+            var tbody = document.getElementById('tableMbd');
+            var html = '';
+            for (var m in map) {
+                var item = map[m];
+                var net = item.val - item.retVal;
+                html += '<tr class="hover:bg-slate-700/30">' +
+                    '<td class="p-3 font-medium text-purple-300">' + m + '</td>' +
+                    '<td class="p-3">' + item.desc + '</td>' +
+                    '<td class="p-3"><span class="bg-slate-700 px-2 py-0.5 rounded text-xs">' + item.rawClass + '</span></td>' +
+                    '<td class="p-3 text-right">' + Math.round(item.qty).toLocaleString('en-IN') + '</td>' +
+                    '<td class="p-3 text-right text-emerald-400">' + formatDisplayValue(item.val) + '</td>' +
+                    '<td class="p-3 text-right text-rose-400">' + formatDisplayValue(item.retVal) + '</td>' +
+                    '<td class="p-3 text-right font-bold text-blue-400">' + formatDisplayValue(net) + '</td>' +
+                '</tr>';
+            }
+            tbody.innerHTML = html;
+        }
+
+        function renderScrapTable(map) {
+            var tbody = document.getElementById('tableScrap');
+            var html = '';
+            for (var m in map) {
+                var item = map[m];
+                var net = item.val - item.retVal;
+                html += '<tr class="hover:bg-slate-700/30">' +
+                    '<td class="p-3 font-medium text-rose-300">' + m + '</td>' +
+                    '<td class="p-3">' + item.desc + '</td>' +
+                    '<td class="p-3"><span class="bg-slate-700 px-2 py-0.5 rounded text-xs text-orange-300">' + item.category + '</span></td>' +
+                    '<td class="p-3 text-right">' + Math.round(item.qty).toLocaleString('en-IN') + ' Kg</td>' +
+                    '<td class="p-3 text-right text-emerald-400">' + formatDisplayValue(item.val) + '</td>' +
+                    '<td class="p-3 text-right text-rose-400">' + formatDisplayValue(item.retVal) + '</td>' +
+                    '<td class="p-3 text-right font-bold text-blue-400">' + formatDisplayValue(net) + '</td>' +
+                '</tr>';
+            }
+            tbody.innerHTML = html;
+        }
+
+        function renderReturnsTable(list) {
+            var tbody = document.getElementById('tableReturns');
+            var html = '';
+            for (var i = 0; i < list.length; i++) {
+                var item = list[i];
+                html += '<tr class="hover:bg-slate-700/30 text-rose-300">' +
+                    '<td class="p-3">' + item.date + '</td>' +
+                    '<td class="p-3 font-medium">' + item.cust + '</td>' +
+                    '<td class="p-3">' + item.matNo + '</td>' +
+                    '<td class="p-3">' + item.desc + '</td>' +
+                    '<td class="p-3 text-right">' + Math.round(item.qty).toLocaleString('en-IN') + ' Pcs</td>' +
+                    '<td class="p-3 text-right font-bold">' + formatDisplayValue(item.val) + '</td>' +
+                '</tr>';
+            }
+            tbody.innerHTML = html;
+        }
+
+        function renderFocTable(list) {
+            var tbody = document.getElementById('tableFoc');
+            var html = '';
+            for (var i = 0; i < list.length; i++) {
+                var item = list[i];
+                html += '<tr class="hover:bg-slate-700/30 text-cyan-300">' +
+                    '<td class="p-3">' + item.date + '</td>' +
+                    '<td class="p-3 font-medium">' + item.cust + '</td>' +
+                    '<td class="p-3">' + item.matNo + '</td>' +
+                    '<td class="p-3">' + item.desc + '</td>' +
+                    '<td class="p-3"><span class="bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded text-xs border border-cyan-500/30">' + item.type + '</span></td>' +
+                    '<td class="p-3 text-right">' + Math.round(item.qty).toLocaleString('en-IN') + ' Pcs</td>' +
+                    '<td class="p-3 text-right font-bold text-cyan-400">' + formatDisplayValue(item.val) + '</td>' +
+                '</tr>';
+            }
+            tbody.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
